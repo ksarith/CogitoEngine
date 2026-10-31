@@ -11,7 +11,9 @@ The project assumes that agents can hallucinate, that confidence is not truth, a
 
 ---
 
-## The assembly model (proposal, v0)
+## The assembly model
+
+> **Contract:** the assembly model is normative in **[Cogito_Engine.md](Cogito_Engine.md)** (instrument v0.1, the build contract). This library is a runtime subordinate to it: the runtime declares the version and subset it implements. The summary below is descriptive; the contract governs.
 
 Three layers, deliberately small:
 
@@ -109,6 +111,7 @@ It is a workbench for assembling thinking, and for catching the assembly being w
 
 | Capability | State |
 |---|---|
+| Build contract ([Cogito_Engine.md](Cogito_Engine.md)) | v0.1 (2026-10-31) — human ratification pending |
 | Agent roles + refusal protocol | Implemented (v0) |
 | Linear flows with shared notebook | Implemented (v0) |
 | YAML flow assembly | Implemented (v0) |
@@ -116,6 +119,7 @@ It is a workbench for assembling thinking, and for catching the assembly being w
 | Branching / DAG flows | Specified, not built |
 | Cross-step memory beyond the notebook | Not built |
 | Independent agent verification (not same-model echo) | Open — see `docs/Unknowns.md` |
+| Coherence threshold (audit-readiness gate) | Specified, not built — deferred until CE-U03 has a benchmark |
 | Benchmarks | Not attempted |
 
 Specified is not demonstrated. A role declaration is not a guarantee the model plays the role. That gap is tracked, not hidden.
