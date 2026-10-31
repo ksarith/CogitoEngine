@@ -1,0 +1,25 @@
+# Peer-review flow: a chain of custody for a claim.
+# Assemble your own: each step declares a role and an instruction.
+name: peer_review
+steps:
+  - name: perceive
+    role: Perceiver
+    instruction: >-
+      Restate the claim precisely. Define what evidence would support or
+      contradict it.
+  - name: challenge
+    role: Skeptic
+    instruction: >-
+      Find the weakest premise. Steel-man nothing. Refuse with [REFUSAL] if
+      the claim is unfalsifiable.
+    stop_on_refusal: true
+  - name: verdict
+    role: Auditor
+    instruction: >-
+      Label each surviving claim Measured / Replicated / Simulated /
+      Analogous / Placeholder. Name what is still unknown.
+  - name: summarize
+    role: Synthesizer
+    instruction: >-
+      Write the verdict in five sentences: what survives, what does not,
+      what test would settle the rest.
