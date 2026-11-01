@@ -37,7 +37,7 @@ Three layers, deliberately small:
 [ Synthesizer ] — produce the final answer with provenance and open questions
 ```
 
-Refusal rule: any agent may return `[REFUSAL] <reason>` instead of an answer. A refusal is a valid, logged output — not an error. A flow that refuses a bad task has worked correctly.
+Refusal rule: any agent may return `[REFUSAL] <reason>` instead of an answer. A refusal is a valid, logged output — not an error. A flow that refuses a bad task has worked correctly. In the default flow, a Skeptic refusal halts the run after the refusal is recorded.
 
 ---
 
@@ -72,6 +72,12 @@ Or from YAML:
 cogito run examples/flows/peer_review.yaml --task "State the problem this repo solves."
 ```
 
+If the flow file defines `task:`, `--task` is optional. Validate a flow without running it:
+
+```bash
+cogito check examples/flows/peer_review.yaml
+```
+
 ```yaml
 # examples/flows/peer_review.yaml
 task: "Peer-review the attached claim"
@@ -93,8 +99,8 @@ steps:
 
 - One small Python package, stdlib-first. The only hard dependency is PyYAML (for flow files).
 - Providers behind one function: OpenAI-compatible and Anthropic-compatible endpoints.
-- Every result carries: role, model, provider, and whether it was a refusal.
-- Flows are files. If you can read YAML, you can audit a cognitive pipeline.
+- Every result carries: role, model, provider, duration, and whether it was a refusal.
+- Flows are files. If you can read YAML, you can audit a cognitive pipeline — and unknown keys are rejected rather than silently ignored.
 
 ## What CogitoEngine is not
 
@@ -114,8 +120,8 @@ It is a workbench for assembling thinking, and for catching the assembly being w
 | Build contract ([Cogito_Engine.md](Cogito_Engine.md)) | v0.1 (2026-10-31) — human ratification pending |
 | Agent roles + refusal protocol | Implemented (v0) |
 | Linear flows with shared notebook | Implemented (v0) |
-| YAML flow assembly | Implemented (v0) |
-| CLI (`cogito run`) | Implemented (v0) |
+| YAML flow assembly (strictly validated) | Implemented (v0.1.1) |
+| CLI (`cogito run`, `cogito check`) | Implemented (v0.1.1) |
 | Branching / DAG flows | Specified, not built |
 | Cross-step memory beyond the notebook | Not built |
 | Independent agent verification (not same-model echo) | Open — see `docs/Unknowns.md` |
