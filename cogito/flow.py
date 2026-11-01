@@ -9,7 +9,12 @@ import yaml
 
 from .agent import Agent, AgentResult
 
-ALLOWED_TOP_KEYS = {"name", "task", "steps"}
+# Step keys are the contract v0.1 assembly key set (§7 C5) and do not grow
+# without an instrument version bump. The top-level "disclosure" key is an
+# EXPERIMENTAL run-metadata extension (contract §8: a runtime ahead of the
+# contract ships as experimental until the contract is amended): additive
+# provenance only, never interpreted as an independence claim.
+ALLOWED_TOP_KEYS = {"name", "task", "steps", "disclosure"}
 ALLOWED_STEP_KEYS = {"name", "role", "instruction", "model", "provider", "stop_on_refusal"}
 
 
@@ -23,6 +28,13 @@ class StepResult:
 class FlowResult:
     task: str
     steps: list[StepResult] = field(default_factory=list)
+    # Run-level disclosure metadata (experimental): captures what the method
+    # (LazarusForge Tests/Cogito_Engine.md v0.4, P5) requires an attack pass
+    # to disclose — reviewer line, model family, shared-context exposure —
+    # so a FlowResult is self-describing about its own non-independence.
+    # Free-form mapping; absence means "not disclosed", which is itself a
+    # disclosure state, never a independence claim.
+    disclosure: dict = field(default_factory=dict)
 
     @property
     def final(self) -> str:
@@ -48,15 +60,21 @@ class Flow:
     """An ordered chain of agents. Each step sees the task + the notebook."""
 
     def __init__(self, steps: list[Step], name: str = "flow",
-                 default_task: str | None = None):
+                 default_task: str | None = None,
+                 disclosure: dict | None = None):
         if not steps:
             raise ValueError("a flow needs at least one step")
+        if disclosure is not None and not isinstance(disclosure, dict):
+            raise ValueError("disclosure must be a mapping (line / model family / "
+                             "shared-context exposure), got "
+                             f"{type(disclosure).__name__}")
         self.steps = steps
         self.name = name
         self.default_task = default_task
+        self.disclosure = disclosure or {}
 
     def run(self, task: str) -> FlowResult:
-        result = FlowResult(task=task)
+        result = FlowResult(task=task, disclosure=dict(self.disclosure))
         notebook: dict[str, str] = {}
         for step in self.steps:
             ar = step.agent.run(task, notebook)
@@ -117,6 +135,9 @@ def flow_from_yaml(path: str | Path) -> Flow:
 
         name: optional flow name
         task: optional default task
+        disclosure: optional run-level disclosure mapping (EXPERIMENTAL —
+          reviewer line, model family, shared-context exposure; carried into
+          FlowResult verbatim; contract v0.1 does not define it, §8 applies)
         steps:
           - name: perceive
             role: Perceiver
@@ -153,6 +174,12 @@ def flow_from_yaml(path: str | Path) -> Flow:
     if task is not None and not isinstance(task, str):
         raise ValueError(f"{path}: 'task' must be a string")
 
+    disclosure = data.get("disclosure")
+    if disclosure is not None and not isinstance(disclosure, dict):
+        raise ValueError(f"{path}: 'disclosure' must be a mapping (reviewer line, "
+                         f"model family, shared-context exposure), got "
+                         f"{type(disclosure).__name__}")
+
     steps: list[Step] = []
     seen: set[str] = set()
     for i, spec in enumerate(raw_steps, 1):
@@ -181,4 +208,5 @@ def flow_from_yaml(path: str | Path) -> Flow:
             provider=spec.get("provider"),
         )
         steps.append(Step(agent, name=agent.name, stop_on_refusal=sor))
-    return Flow(steps, name=data.get("name") or Path(path).stem, default_task=task)
+    return Flow(steps, name=data.get("name") or Path(path).stem, default_task=task,
+                disclosure=disclosure)
