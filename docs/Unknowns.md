@@ -12,6 +12,7 @@ quietly ignored.
 | CE-U04 | Notebook context grows unbounded; at what length does it degrade later steps? | Open — unmeasured |
 | CE-U05 | Refusal detection is a string prefix; how often do models refuse without the marker? | Open — unmeasured |
 | CE-U06 | Name collision: LazarusForge `Tests/Cogito_Engine.md` is a method file (version line 0.3/0.4); this repo's `Cogito_Engine.md` is the runtime build contract (version line 0.1). Same filename, different document classes, separate version lines — and no derivation between them is recorded: this contract was drafted from this repo's own README v0 proposal. Congruence of principles is independent convergence — signal, not proof. | Open — registered 2026-11-01 (Architect attack pass on the v0.3→v0.4 delta note); if a derivation is ever claimed, it must be registered here with provenance |
+| CE-U07 | Carry-over fidelity: can a fresh agent reconstruct a candidate's development — changes, reasons, unresolved objections — from written artifacts alone, with no conversation access? | Open — trial protocol drafted 2026-11-01 (docs/Cold_Start_Trial.md); not yet run |
 
 Closing rule: to close an unknown, file an issue with a transcript and the
 evidence classification (Measured / Replicated / Simulated / Analogous /
