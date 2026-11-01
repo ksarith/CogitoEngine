@@ -1,4 +1,4 @@
-"""CLI: cogito run <flow.yaml> --task "..." / cogito demo"""
+"""CLI: cogito run <flow.yaml> [--task "..."] / cogito check <flow.yaml> / cogito demo"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def _print(result) -> None:
     for s in result.steps:
         ar = s.agent_result
         flag = "  [REFUSAL]" if ar.refusal else ""
-        print(f"[{s.step_name}] {ar.role} ({ar.model}/{ar.provider}){flag}")
+        print(f"[{s.step_name}] {ar.role} ({ar.model}/{ar.provider}, {ar.seconds}s){flag}")
         print("-" * 60)
         print(ar.output.strip())
         print()
@@ -31,16 +31,34 @@ def main(argv: list[str] | None = None) -> int:
 
     p_run = sub.add_parser("run", help="run a YAML flow")
     p_run.add_argument("flow", help="path to a .yaml flow file")
-    p_run.add_argument("--task", required=True, help="the task text")
+    p_run.add_argument("--task", default=None,
+                       help="the task text (optional if the flow YAML defines task:)")
 
-    sub.add_parser("demo", help="run the built-in cognitive flow on a sample task")
-    demo_p = sub._subparsers._group_actions[0].choices["demo"]  # noqa: SLF001
-    demo_p.add_argument("--task", default="Design a cheap rainwater filter from salvage parts.")
+    p_check = sub.add_parser("check", help="validate a YAML flow without running it")
+    p_check.add_argument("flow", help="path to a .yaml flow file")
+
+    p_demo = sub.add_parser("demo", help="run the built-in cognitive flow on a sample task")
+    p_demo.add_argument("--task", default="Design a cheap rainwater filter from salvage parts.")
 
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "check":
+            flow = flow_from_yaml(args.flow)
+            names = [s.name for s in flow.steps]
+            print(f"valid: flow '{flow.name}' — {len(names)} step(s): {', '.join(names)}")
+            if flow.default_task:
+                print(f"default task: {flow.default_task!r}")
+            else:
+                print("no default task — pass --task when running")
+            return 0
         if args.cmd == "run":
-            result = flow_from_yaml(args.flow).run(args.task)
+            flow = flow_from_yaml(args.flow)
+            task = args.task or flow.default_task
+            if not task:
+                print("error: no task given — pass --task or set 'task:' in the flow YAML",
+                      file=sys.stderr)
+                return 1
+            result = flow.run(task)
         else:
             result = cognitive_flow().run(args.task)
     except (LLMError, ValueError, OSError) as exc:
