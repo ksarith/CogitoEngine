@@ -10,7 +10,7 @@ __version__ = "0.1.1"
 # implements Cogito_Engine.md v0.1 as a declared subset — linear flows
 # only; no branching/DAG, no coherence-threshold gate, no cross-step
 # memory beyond the notebook, no independent (non-same-model)
-# verification. Gaps are tracked in docs/Unknowns.md (CE-U01..CE-U06).
+# verification. Gaps are tracked in docs/Unknowns.md (CE-U01..CE-U07).
 INSTRUMENT = "Cogito_Engine.md"
 INSTRUMENT_VERSION = "0.1"
 
