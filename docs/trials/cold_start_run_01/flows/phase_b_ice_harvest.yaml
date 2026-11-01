@@ -1,0 +1,44 @@
+# CE-U07 run-01, Phase B: the same idea through the runtime.
+# Assemble: cogito run docs/trials/cold_start_run_01/flows/phase_b_ice_harvest.yaml
+# The disclosure mapping is EXPERIMENTAL run metadata (contract §8) — fill it
+# at run time; absence means "not disclosed", never an independence claim.
+name: phase_b_ice_harvest
+disclosure:
+  line: "<fill at run: line / model family actually used>"
+  model_family: "<fill at run>"
+  shared_context: "<fill at run: e.g., fresh session, no prior conversation access>"
+steps:
+  - name: perceive
+    role: Perceiver
+    instruction: >-
+      Restate the task in your own words. Name what is actually being asked,
+      the assumptions baked into the question, and what would count as a
+      good answer.
+  - name: engineer
+    role: Engineer
+    instruction: >-
+      Propose one concrete answer or design for the Ice-Harvest Bench: concept,
+      a mass/energy budget table under a hard 500 W cap, a salvage gate map
+      (function/assembly/component/material), and the top three failure modes.
+      Be specific and buildable. Prefer salvage-simple over elegant.
+  - name: skeptic
+    role: Skeptic
+    instruction: >-
+      Attack the premise and the Engineer's proposal. Name the single weakest
+      premise and the most likely failure mode. You are not allowed to be a
+      cheerleader. Refuse with [REFUSAL] if the premise is unfalsifiable or
+      unsafe.
+    stop_on_refusal: true
+  - name: audit
+    role: Auditor
+    instruction: >-
+      Check the Engineer's claims against the notebook. Label each significant
+      claim as Measured / Replicated / Simulated / Analogous / Placeholder.
+      Flag anything that is asserted without evidence.
+  - name: synthesize
+    role: Synthesizer
+    instruction: >-
+      Produce the final answer: what survives the Skeptic and Auditor, what
+      remains uncertain, and what the next concrete test would be. Cite which
+      notebook steps you relied on.
+    stop_on_refusal: true
