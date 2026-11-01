@@ -25,8 +25,8 @@ Bounded design problem, fresh idea (NOT the Reset-Event example — it is alread
 
 ### Phase B — runtime trial (run reconstruction)
 
-1. Run a multi-step flow on the same idea (`cogito run`), including a Skeptic step with `stop_on_refusal: true`.
-2. A fresh agent receives only the FlowResult (steps, roles, models/providers, durations, refusal flags, notebook) and reconstructs: what the flow concluded, where it was attacked, whether any refusal occurred, and what the next concrete test would be.
+1. Run a multi-step flow on the same idea (`cogito run`), including a Skeptic step with `stop_on_refusal: true`. Set the flow's `disclosure` mapping (reviewer line, model family, shared-context exposure) so the FlowResult carries its own non-independence.
+2. A fresh agent receives only the FlowResult (steps, roles, models/providers, durations, refusal flags, notebook, disclosure) and reconstructs: what the flow concluded, where it was attacked, whether any refusal occurred, and what the next concrete test would be.
 
 ## Candidate measures (not established metrics)
 
@@ -46,6 +46,15 @@ Record failures as carefully as successes. No selection bias in any Lessons Lear
 - Successful reconstruction is evidence about record-keeping, not about the idea's correctness (method v0.4 P3).
 - No numeric coherence gate is asserted by this trial (CE-U03 remains open).
 
+## Vocabulary discipline
+
+Two claim-classification schemas appear in this trial and they are **distinct, non-interchangeable instruments**:
+
+- **Method delta-record claim classes** (v0.4 P2): observed / inferred / assumed / unknown — used inside delta notes about how the draft changed.
+- **Contract evidence labels** (v0.1 §1 P5, §2 Auditor): Measured / Replicated / Simulated / Analogous / Placeholder — used inside flow steps about claims in the proposal.
+
+Agents must record which schema each entry uses, and must not silently merge, translate, or relabel between them. A claim labeled in one schema is not thereby labeled in the other; conflation of the two is itself a recorded trial failure.
+
 ## Record sheet
 
-To be filled per run: date, agents (line / model family), shared-context disclosure, artifact list, cold-start answers, scores, failures. Until run: (none).
+To be filled per run: date, agents (line / model family), shared-context disclosure (use `Flow.disclosure` in Phase B so it survives into the FlowResult), artifact list, cold-start answers, scores, failures. Until run: (none).
