@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .flow import cognitive_flow, flow_from_yaml
+from .flow import FlowAborted, cognitive_flow, flow_from_yaml
 from .llm import LLMError
 
 
@@ -22,6 +22,16 @@ def _print(result) -> None:
     if result.refused:
         r = result.refused
         print(f"Flow refused at step '{r.step_name}'. That is a valid outcome, not a crash.")
+
+
+def _run(flow, task: str):
+    """Run a flow; on a mid-run failure print the completed steps, then fail."""
+    try:
+        return flow.run(task), 0
+    except FlowAborted as exc:
+        _print(exc.partial)
+        print(f"error: {exc}", file=sys.stderr)
+        return None, 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -58,9 +68,11 @@ def main(argv: list[str] | None = None) -> int:
                 print("error: no task given — pass --task or set 'task:' in the flow YAML",
                       file=sys.stderr)
                 return 1
-            result = flow.run(task)
+            result, rc = _run(flow, task)
         else:
-            result = cognitive_flow().run(args.task)
+            result, rc = _run(cognitive_flow(), args.task)
+        if rc:
+            return rc
     except (LLMError, ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

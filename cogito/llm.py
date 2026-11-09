@@ -16,10 +16,25 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
 REFUSAL_MARKER = "[REFUSAL]"
+
+_MARKUP_PREFIX = re.compile(r"^[\s>*_`#~-]+")
+
+
+def is_refusal(text: str) -> bool:
+    """True if the output begins with the refusal marker.
+
+    Prefix-only per contract section 4, but tolerant of leading whitespace,
+    markdown emphasis/quote/heading characters and letter case
+    ('**[refusal]** ...'). Refusals without the marker, or after a preamble
+    line, are NOT detected (Unknown CE-U05).
+    """
+    head = _MARKUP_PREFIX.sub("", text)
+    return head[: len(REFUSAL_MARKER)].upper() == REFUSAL_MARKER
 
 
 class LLMError(RuntimeError):
@@ -27,11 +42,24 @@ class LLMError(RuntimeError):
 
 
 class LLMResponse:
-    def __init__(self, text: str, model: str, provider: str, raw: dict | None = None):
+    """A model reply plus provenance.
+
+    model is the model the provider REPORTED serving (the requested model if
+    the response names none); requested_model is what was asked for. They
+    differ under aliases such as '-latest'. base_url and temperature record
+    what was actually called and how.
+    """
+
+    def __init__(self, text: str, model: str, provider: str, raw: dict | None = None,
+                 *, requested_model: str | None = None, base_url: str = "",
+                 temperature: float | None = None):
         self.text = text
         self.model = model
         self.provider = provider
         self.raw = raw or {}
+        self.requested_model = requested_model or model
+        self.base_url = base_url
+        self.temperature = temperature
 
     def __repr__(self) -> str:  # pragma: no cover - debug sugar
         return f"LLMResponse(provider={self.provider!r}, model={self.model!r}, chars={len(self.text)})"
@@ -46,7 +74,7 @@ DEFAULT_BASES = {
 DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "mistral": "mistral-small-latest",
-    "anthropic": "claude-3-5-haiku-latest",
+    "anthropic": "claude-haiku-5-5",
 }
 
 ANTHROPIC_VERSION = "2023-06-01"
@@ -116,4 +144,8 @@ def call_llm(
 
     if not text.strip():
         raise LLMError(f"provider {provider} returned empty content")
-    return LLMResponse(text=text, model=model, provider=provider, raw=data)
+    reported = data.get("model")
+    return LLMResponse(text=text,
+                       model=reported if isinstance(reported, str) and reported else model,
+                       provider=provider, raw=data, requested_model=model,
+                       base_url=base, temperature=temperature)

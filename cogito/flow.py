@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from .agent import Agent, AgentResult
+from .llm import LLMError
 
 # Step keys are the contract v0.1 assembly key set (§7 C5) and do not grow
 # without an instrument version bump. The top-level "disclosure" key is an
@@ -48,6 +49,21 @@ class FlowResult:
         return {s.step_name: s.agent_result.output for s in self.steps}
 
 
+class FlowAborted(LLMError):
+    """A step failed (e.g. provider error) after earlier steps completed.
+
+    The completed steps are evidence and are not discarded: they are on
+    ``.partial`` (a FlowResult). The failure is loud, not a refusal, and is
+    never presented as a flow result: ``.partial.final`` is NOT an answer.
+    """
+
+    def __init__(self, step_name: str, partial: "FlowResult", cause: Exception):
+        super().__init__(f"step {step_name!r} failed after {len(partial.steps)} "
+                         f"completed step(s): {cause}")
+        self.step_name = step_name
+        self.partial = partial
+
+
 class Step:
     def __init__(self, agent: Agent, name: str | None = None,
                  stop_on_refusal: bool = False):
@@ -68,6 +84,12 @@ class Flow:
             raise ValueError("disclosure must be a mapping (line / model family / "
                              "shared-context exposure), got "
                              f"{type(disclosure).__name__}")
+        seen: set[str] = set()
+        for s in steps:
+            if s.name in seen:
+                raise ValueError(f"duplicate step name {s.name!r} \u2014 "
+                                 "notebook keys must be unique (contract section 3)")
+            seen.add(s.name)
         self.steps = steps
         self.name = name
         self.default_task = default_task
@@ -77,7 +99,10 @@ class Flow:
         result = FlowResult(task=task, disclosure=dict(self.disclosure))
         notebook: dict[str, str] = {}
         for step in self.steps:
-            ar = step.agent.run(task, notebook)
+            try:
+                ar = step.agent.run(task, notebook)
+            except LLMError as exc:
+                raise FlowAborted(step.name, result, exc) from exc
             result.steps.append(StepResult(step_name=step.name, agent_result=ar))
             notebook[step.name] = ar.output
             if ar.refusal and step.stop_on_refusal:
