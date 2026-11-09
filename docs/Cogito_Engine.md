@@ -3,7 +3,7 @@
 > *The purpose is not to make agents. The purpose is to make thinking assemble-able.*
 
 **Document class:** Build contract (normative instrument).
-**Version:** 0.2 · **Date:** 2026-11-09 · **Status:** proposed contract of record — human ratification pending. Amends the unratified v0.1 (2026-10-31); see §9.
+**Version:** 0.2 · **Date:** 2026-11-09 · **Status:** contract of record — **ratified 2026-11-09 by Ksarith** (human governing authority). Amends the unratified v0.1 (2026-10-31); see §9.
 **Subordination:** This file is the authoritative source of the assembly contract. The `cogito/` Python library is a runtime that implements a **declared subset** of it. Flow files (YAML or Python) are instances that the runtime assembles under this contract. On any conflict, this file governs — the code is what got built, not what is true.
 
 **What this file is not:** executable code, a prompt store, a key vault, or runtime state. It must not be turned into a pseudo-programming language. It constrains and authorizes assembly; it does not assemble.
@@ -60,7 +60,7 @@ The role contract that reaches the model MUST include the declared role's own Al
 [ Synthesizer ] — produce the final answer with provenance and open questions
 ```
 
-Flows are linear in instrument v0.1. Branching/DAG flows are **specified, not built**: a runtime claiming v0.1 conformance does not need them; a runtime claiming a later version does.
+Flows are linear through instrument v0.2. Branching/DAG flows are **specified, not built**: no runtime needs them until a ratified instrument version requires them.
 
 ## 6. Audit-readiness (the exit condition)
 
@@ -76,7 +76,7 @@ A run is **audit-ready** when all of the following hold:
 
 ## 7. Conformance
 
-A runtime may claim **"implements Cogito_Engine.md 0.1"** only if it provides:
+A runtime may claim **"implements Cogito_Engine.md"**, naming the instrument version it was checked against (§8), only if it provides:
 
 - **C1 Role channel** — agents are (name, role, instruction, optional model/provider); the role contract, including the role's own Allowed / Forbidden text, reaches the model via the system prompt (§2).
 - **C2 Notebook** — append-only shared notebook per §3, with unique step names and completed records surviving a later step's failure.
@@ -87,7 +87,7 @@ A runtime may claim **"implements Cogito_Engine.md 0.1"** only if it provides:
 - **C7 Unknowns** — closing an unknown requires a transcript and an evidence classification; a closed unknown that reopens is logged again.
 - **C8 Declaration** — the runtime declares the instrument version it implements and names its subset. Gaps are declared up front, not discovered later by users.
 
-**Declared subset of `cogito` 0.1.2:** checked against instrument v0.1; the v0.2 amendments in this file (role-specific text in C1, C2 failure preservation, C3 reported-vs-requested model, §4 marker normalization) and the runtime's top-level `disclosure` flow key are implemented as experimental and unconformant until v0.2 is ratified (§8). Implements C1–C8 for linear flows. Not implemented: branching/DAG, coherence threshold, cross-step memory beyond the notebook, independent (non-same-model) verification. Tracked in `docs/Unknowns.md` (CE-U01…CE-U07), not hidden.
+**Declared subset of `cogito` 0.1.2:** checked against instrument v0.2 (ratified 2026-11-09); the v0.2 amendments in this file (role-specific text in C1, C2 failure preservation, C3 reported-vs-requested model, §4 marker normalization) and the runtime's top-level `disclosure` flow key were experimental and unconformant while v0.2 was pending and are conformant as of its ratification (§8). Implements C1–C8 for linear flows. Not implemented: branching/DAG, coherence threshold, cross-step memory beyond the notebook, independent (non-same-model) verification. Tracked in `docs/Unknowns.md` (CE-U01…CE-U07), not hidden.
 
 **Non-conformance (any of these voids the claim):** swallowing refusals; a mutable or silently truncated notebook; Auditor output presented as audited without labels; provenance stripped from results; completed steps discarded when a later step fails; duplicate step names; prompts, keys, or runtime state stored in this contract.
 
@@ -99,9 +99,9 @@ A runtime may claim **"implements Cogito_Engine.md 0.1"** only if it provides:
 
 ## 9. Amendment log
 
-- **v0.2 (2026-11-09, proposed):** role-specific contract text required in the role channel (§2, C1); unique step names and failure preservation (§3, C2); reported-vs-requested model, endpoint and temperature in provenance (C3); marker-matching normalization (§4); declared subset corrected to `cogito` 0.1.2 and CE-U01…CE-U07. No principle, role-table, flow or readiness-criteria change.
+- **v0.2 (2026-11-09, ratified):** role-specific contract text required in the role channel (§2, C1); unique step names and failure preservation (§3, C2); reported-vs-requested model, endpoint and temperature in provenance (C3); marker-matching normalization (§4); declared subset corrected to `cogito` 0.1.2 and CE-U01…CE-U07. No principle, role-table, flow or readiness-criteria change. Ratified 2026-11-09 by Ksarith with the §5/§7 instrument-version references normalized into the ratified text under his ruling (the draft's "a runtime claiming a later version does" would otherwise have required branching/DAG of any v0.2-conformant runtime); no other change.
 - **v0.1 (2026-10-31):** initial draft.
 
 ---
-*Provenance: drafted 2026-10-31 by Vibe (GLM 5.3) from README.md (v0 assembly proposal), the `cogito` 0.1.0 runtime source, and `docs/Unknowns.md`. Awaiting human ratification.*
-*v0.2 amendment drafted 2026-11-09 by Claude from a review of this contract against the `cogito` 0.1.1 source. Awaiting human ratification.*
+*Provenance: drafted 2026-10-31 by Vibe (GLM 5.3) from README.md (v0 assembly proposal), the `cogito` 0.1.0 runtime source, and `docs/Unknowns.md`. Never ratified; superseded by v0.2.*
+*v0.2 amendment drafted 2026-11-09 by Claude from a review of this contract against the `cogito` 0.1.1 source. Ratified 2026-11-09 by Ksarith (human governing authority); Grok-reviewed before ratification; landed by Vibe under the co-author mandate, with the §5/§7 instrument-version references normalized into the ratified text under his ruling.*

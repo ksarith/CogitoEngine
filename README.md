@@ -13,7 +13,7 @@ The project assumes that agents can hallucinate, that confidence is not truth, a
 
 ## The assembly model
 
-> **Contract:** the assembly model is normative in **[Cogito_Engine.md](Cogito_Engine.md)** (the build contract; v0.2 proposed, ratification pending; the runtime is checked against v0.1). This library is a runtime subordinate to it: the runtime declares the version and subset it implements. The summary below is descriptive; the contract governs.
+> **Contract:** the assembly model is normative in **[docs/Cogito_Engine.md](docs/Cogito_Engine.md)** (the build contract; v0.2, ratified 2026-11-09; the runtime is checked against v0.2). This library is a runtime subordinate to it: the runtime declares the version and subset it implements. The summary below is descriptive; the contract governs.
 
 Three layers, deliberately small:
 
@@ -117,12 +117,12 @@ It is a workbench for assembling thinking, and for catching the assembly being w
 
 | Capability | State |
 |---|---|
-| Build contract ([Cogito_Engine.md](Cogito_Engine.md)) | v0.2 proposed (2026-11-09, amends v0.1 of 2026-10-31) — human ratification pending |
+| Build contract ([docs/Cogito_Engine.md](docs/Cogito_Engine.md)) | v0.2 (2026-11-09, amends the unratified v0.1 of 2026-10-31) — **ratified 2026-11-09 by Ksarith** |
 | Agent roles + refusal protocol | Implemented (v0) |
 | Linear flows with shared notebook | Implemented (v0) |
 | YAML flow assembly (strictly validated) | Implemented (v0.1.1) |
 | CLI (`cogito run`, `cogito check`) | Implemented (v0.1.1) |
-| Role-specific contract text, partial results on failure, reported-vs-requested model | Implemented (v0.1.2) — experimental until contract v0.2 is ratified |
+| Role-specific contract text, partial results on failure, reported-vs-requested model | Implemented (v0.1.2) — conformant with contract v0.2 (ratified 2026-11-09) |
 | Offline tests (`python -m unittest discover tests`) | Implemented (v0.1.2) — cover contract mechanics, not model behavior |
 | Branching / DAG flows | Specified, not built |
 | Cross-step memory beyond the notebook | Not built |
