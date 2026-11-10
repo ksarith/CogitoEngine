@@ -125,6 +125,7 @@ It is a workbench for assembling thinking, and for catching the assembly being w
 | Role-specific contract text, partial results on failure, reported-vs-requested model | Implemented (v0.1.2) — conformant with contract v0.2 (ratified 2026-11-09) |
 | Offline tests (`python -m unittest discover tests`) | Implemented (v0.1.2) — cover contract mechanics, not model behavior |
 | Run record (append-only `docs/runs/RUN_LOG.md`) | Adopted as a repo convention (2026-11-09) — experimental until a contract amendment; runtime auto-logging not built |
+| Stop-rule (artifact-completeness) | Adopted as a repo convention (2026-11-09) — experimental until a contract amendment; budget-cap and no-delta exit tests specified, not adopted |
 | Branching / DAG flows | Specified, not built |
 | Cross-step memory beyond the notebook | Not built |
 | Independent agent verification (not same-model echo) | Open — see `docs/Unknowns.md` |
