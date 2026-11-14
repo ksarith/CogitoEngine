@@ -1,0 +1,38 @@
+# EXPERIMENTAL peer cluster (CE-U08 / CE-U09). Unconformant with Cogito_Engine.md v0.2.
+# Load with cogito.peer.peer_flow_from_yaml - NOT with `cogito run` (different key set).
+#
+# Capability is open: any seat may object, counter-propose, add evidence or ask.
+# Independence is enforced in code: no seat dispositions its own notes, and only
+# certifier seats label evidence, never their own contributions.
+#
+# `family` is declared by you and is not verified. Fill it in honestly: if all
+# seats are one family (or blank), the result carries a non-independence warning.
+# Set model/provider per seat to actually use different families.
+name: peer_cluster
+disclosure:
+  line: "same notebook read by every seat; sequential, not parallel"
+seats:
+  - name: opener
+    family: ""            # e.g. anthropic / openai / mistral
+    instruction: >-
+      Frame what is actually being asked and what would count as a good answer,
+      then give your best concrete answer. Add typed notes for anything you are
+      unsure of.
+  - name: pressure_a
+    family: ""
+    instruction: >-
+      Apply pressure to the weakest premise and the most likely failure mode.
+      If you see a better design, say so as a counter-proposal note. Disposition
+      the notes you owe.
+  - name: pressure_b
+    family: ""
+    instruction: >-
+      Check what pressure_a and opener did not: missing evidence, hidden
+      assumptions, anything that sounds right but is unsupported. Disposition
+      the notes you owe.
+  - name: certifier
+    family: ""
+    certifies: true
+    instruction: >-
+      Label the claims and notes you did not author. State what is still open
+      and the next concrete test.
