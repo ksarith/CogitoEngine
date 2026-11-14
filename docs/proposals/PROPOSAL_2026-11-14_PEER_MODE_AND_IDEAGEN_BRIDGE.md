@@ -7,7 +7,7 @@
 ## 1. What is added (new files only)
 
 - `cogito/peer.py` — a separate flow type: peer seats, typed side-notes, dispositions, certifier seats. Own strict YAML format (`examples/flows/peer_cluster.yaml`); not loadable by `cogito run`.
-- `cogito/ideagen_bridge.py` — stdlib HTTP bridge to a running Idea Generator 2 (loopback API). No change to the idea generator.
+- `cogito/ideagen_bridge.py` — stdlib HTTP bridge to a running Idea Generator 2 (loopback API). The bridge itself changes nothing in the idea generator; the optional patch in §7 does. Includes `vet-one` (§7).
 - `tests/test_peer_and_bridge.py` — offline mechanics tests (fake LLM, fake idea-generator server).
 
 ## 2. Peer mode: which limits are open, which are enforced
@@ -38,7 +38,7 @@ Same seeds, two arms: `--arm strict` (the default cognitive flow, contract roles
 
 ## 5. Not demonstrated
 
-- 34 offline tests pass (the 9 existing plus 25 new). They cover mechanics only: parsing, the code-enforced limits, ledger, selection, feed rules, HTTP error paths.
+- 38 offline tests pass (the 9 existing plus 29 new). They cover mechanics only: parsing, the code-enforced limits, ledger, selection, feed rules, HTTP error paths.
 - No live model has run a peer flow. The bridge has been exercised only against a fake idea-generator server, not a live instance. Whether models emit the note/disposition/label markers reliably is unmeasured; the runtime records every miss as a flag rather than assuming compliance.
 - Seeds longer than 160 characters are rewritten by the receiving board's distill step, so seeded wording is the board's, not the seat's; the seat's original note stays in the run record and the ledger links note to seeded idea.
 
@@ -47,3 +47,14 @@ Same seeds, two arms: `--arm strict` (the default cognitive flow, contract roles
 1. Keep peer mode experimental and out of the contract until CE-U09 has evidence (recommended), or open an amendment draft now.
 2. Whether `family` and the non-independence warning should be proposed for the contract's disclosure language (currently the experimental `disclosure` key carries free-form text).
 3. Which sealed ground truth and scoring rule a CE-U09 trial uses (CE-U07 run-01 or a fresh seed).
+
+## 7. Addendum (same day): `vet-one` and an optional idea-generator patch
+
+On the governing authority's "Yes please" to adding a way for the idea generator to call Cogito, two things were added.
+
+- **`vet-one --stdin` (this repo):** reads one idea as JSON on stdin, runs the chosen arm(s), prints run records as JSON on stdout. Pure: no HTTP, no ledger, no files; errors go to stderr. A provider failure is an `aborted` run record, not a crash.
+- **A separate patch to Idea Generator 2** (shipped as its own zip; a fork of an MIT project, new files plus small edits): a "Vet with Cogito" button on the idea card, run via `server/cogito.ts` (spawns `vet-one`, keys passed in the child's environment only) and `server/vetting.ts` (a `vettings` table, SSE updates, a dialog showing refusals, open notes and counter-proposals). Off unless `COGITO_DIR` is set.
+
+Rules carried over and made structural: Cogito never writes fitness (the patch touches no score, medal, jury or autopilot code); counter-proposals become seeds only when a person picks one; no pass/fail badge, only flags and open questions; jury score hidden from seats unless opted in; Cogito's cost is invisible to the idea generator's dollar budget, so a per-day run cap (`COGITO_MAX_RUNS_PER_DAY`, default 10, counted per arm, failed runs included) is the only brake.
+
+Verification: 15 new Node tests with a faked Cogito and fake command-line children, plus a manual end-to-end pass (real Node server and runner, real `vet-one`, fake OpenAI-compatible provider on localhost). Not verified: any live model, and the browser UI (checked for syntax and string keys only; no DOM test exists in that repo).
