@@ -35,6 +35,7 @@ Usage (see --help on each):
     python -m cogito.ideagen_bridge vet 1 --dry-run
     python -m cogito.ideagen_bridge vet 1 --arm both --feed
     python -m cogito.ideagen_bridge feed bridge_runs/<run>.json --board 1
+    echo '{"board_id":1,"idea":{...},"goal":"..."}' | python -m cogito.ideagen_bridge vet-one --stdin
 """
 
 from __future__ import annotations
@@ -267,6 +268,48 @@ def write_project_note(project_path: str, md: str) -> Path | None:
     return target
 
 
+def build_run(board_id: int, idea: dict, goal: str, arm: str, out: dict, show_jury: bool) -> dict:
+    """One run record: provenance, source idea, jury (as data), and the arm's result."""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return {"run_id": f"board{board_id}_idea{idea['id']}_{arm}_{stamp}",
+            "bridge_version": BRIDGE_VERSION, "bridge_status": STATUS,
+            "arm": arm, "status": out["status"], "error": out.get("error"),
+            "jury_shown_to_seats": show_jury,
+            "source": {"board_id": board_id, "idea_id": idea["id"], "title": idea.get("title"),
+                       "pitch": idea.get("pitch"), "goal": goal,
+                       "jury": {c: idea.get(c) for c in CRITERIA}, "jury_reason": idea.get("reason")},
+            "result": out["result"]}
+
+
+def vet_one(payload: dict, peer_flow_path: Path) -> dict:
+    """Pure function behind `vet-one`: no HTTP, no ledger, no files.
+
+    payload: {board_id, idea: {id, title, pitch, ...}, goal, arm: peer|strict|both, show_jury}
+    Returns {"runs": [run, ...]}; each run carries its Markdown under "markdown".
+    """
+    idea = payload.get("idea")
+    if not isinstance(idea, dict) or not isinstance(idea.get("id"), int):
+        raise ValueError("payload.idea must be an object with an integer id")
+    board_id = payload.get("board_id")
+    if not isinstance(board_id, int):
+        raise ValueError("payload.board_id must be an integer")
+    arm = payload.get("arm", "peer")
+    if arm not in ("peer", "strict", "both"):
+        raise ValueError("payload.arm must be peer, strict or both")
+    arms = ["strict", "peer"] if arm == "both" else [arm]
+    goal, show_jury = str(payload.get("goal") or ""), bool(payload.get("show_jury"))
+    task = task_for(idea, goal, show_jury)
+    disclosure = {"source": "idea-generator-2 via ideagen_bridge vet-one",
+                  "jury_shown_to_seats": show_jury, "bridge_version": BRIDGE_VERSION}
+    runs = []
+    for a in arms:
+        out = run_arm(a, task, peer_flow_path, disclosure)
+        run = build_run(board_id, idea, goal, a, out, show_jury)
+        run["markdown"] = out["markdown"]
+        runs.append(run)
+    return {"runs": runs}
+
+
 def vet_board(client: IdeaGenClient, board_id: int, *, arms: list[str], peer_flow_path: Path,
               min_medal: int, max_ideas: int, max_depth: int, show_jury: bool, out_dir: Path,
               ledger: Ledger, write_project: bool, dry_run: bool, log=print) -> list[dict]:
@@ -292,15 +335,8 @@ def vet_board(client: IdeaGenClient, board_id: int, *, arms: list[str], peer_flo
         mds = []
         for arm in [a for a in arms if a not in ledger.vetted_arms(idea["id"])]:
             out = run_arm(arm, task, peer_flow_path, disclosure)
-            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-            run_id = f"board{board_id}_idea{idea['id']}_{arm}_{stamp}"
-            run = {"run_id": run_id, "bridge_version": BRIDGE_VERSION, "bridge_status": STATUS,
-                   "arm": arm, "status": out["status"], "error": out.get("error"),
-                   "jury_shown_to_seats": show_jury,
-                   "source": {"board_id": board_id, "idea_id": idea["id"], "title": idea.get("title"),
-                              "pitch": idea.get("pitch"), "goal": goal,
-                              "jury": {c: idea.get(c) for c in CRITERIA}, "jury_reason": idea.get("reason")},
-                   "result": out["result"]}
+            run = build_run(board_id, idea, goal, arm, out, show_jury)
+            run_id = run["run_id"]
             (out_dir / f"{run_id}.json").write_text(json.dumps(run, indent=2, ensure_ascii=False), encoding="utf-8")
             (out_dir / f"{run_id}.md").write_text(out["markdown"], encoding="utf-8")
             if out["status"] != "aborted":   # aborted runs retry; refusal is a valid completion
@@ -375,6 +411,11 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--max-seeds", type=int, default=3)
     v.add_argument("--feed-refused", action="store_true")
 
+    o = sub.add_parser("vet-one", help="vet ONE idea from JSON on stdin; print run records as JSON "
+                                       "(used by the idea generator's server; no HTTP, no ledger, no files)")
+    o.add_argument("--stdin", action="store_true", required=True)
+    o.add_argument("--flow", default=str(DEFAULT_PEER_FLOW), help="peer-cluster YAML")
+
     f = sub.add_parser("feed", help="feed counter-proposals from saved run file(s)")
     f.add_argument("runs", nargs="+")
     f.add_argument("--board", type=int, default=None)
@@ -383,6 +424,14 @@ def main(argv: list[str] | None = None) -> int:
     f.add_argument("--dry-run", action="store_true")
 
     args = ap.parse_args(argv)
+    if args.cmd == "vet-one":          # stdout carries JSON only; errors go to stderr
+        try:
+            payload = json.loads(sys.stdin.read())
+            print(json.dumps(vet_one(payload, Path(args.flow)), ensure_ascii=False))
+            return 0
+        except (ValueError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
     try:
         client = IdeaGenClient(args.url, allow_remote=args.allow_remote)
         ledger = Ledger(args.ledger)
