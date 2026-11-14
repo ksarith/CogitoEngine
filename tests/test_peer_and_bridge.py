@@ -19,7 +19,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from cogito.ideagen_bridge import (BridgeError, IdeaGenClient, Ledger, feed_run,  # noqa: E402
-                                   main as bridge_main, medal_of, select_candidates, vet_board)
+                                   main as bridge_main, medal_of, select_candidates, vet_board,
+                                   vet_one)
 from cogito.llm import LLMError, LLMResponse  # noqa: E402
 from cogito.peer import (Seat, PeerFlow, PeerFlowAborted, parse_output,  # noqa: E402
                          peer_flow_from_yaml)
@@ -354,6 +355,55 @@ class Bridge(unittest.TestCase):
         self.assertEqual(bridge_main(["--url", self.url, "--ledger", str(self.dir / "l.jsonl"),
                                       "vet", "1", "--dry-run"]), 0)
         self.assertEqual(bridge_main(["--url", "http://127.0.0.1:1", "boards"]), 1)
+
+
+class VetOne(unittest.TestCase):
+    """The pure entry point the idea generator's server spawns (stdin JSON -> stdout JSON)."""
+
+    PAYLOAD = {"board_id": 1, "goal": "Cheap water", "arm": "peer", "show_jury": False,
+               "idea": {"id": 7, "title": "Rain sieve", "pitch": "p", "originality": 4,
+                        "feasibility": 4, "impact": 4, "reason": "strong"}}
+
+    def test_peer_run_record_and_no_jury_by_default(self):
+        with mock.patch("cogito.peer.call_llm", side_effect=scripted(*(["x\n[NOTE:counter-proposal] y"] * 4))):
+            out = vet_one(dict(self.PAYLOAD), PEER_YAML)
+        run = out["runs"][0]
+        self.assertEqual((run["arm"], run["status"], run["source"]["idea_id"]), ("peer", "completed", 7))
+        self.assertIn("markdown", run)
+        self.assertNotIn("Jury opinion", run["result"]["seats"][0]["prompt"])
+        self.assertEqual(run["result"]["notes"][0]["type"], "counter-proposal")
+        json.dumps(out)
+
+    def test_both_arms_and_validation(self):
+        with mock.patch("cogito.agent.call_llm", side_effect=scripted(*(["s"] * 5))), \
+             mock.patch("cogito.peer.call_llm", side_effect=scripted(*(["p"] * 4))):
+            out = vet_one({**self.PAYLOAD, "arm": "both"}, PEER_YAML)
+        self.assertEqual([r["arm"] for r in out["runs"]], ["strict", "peer"])
+        for bad in ({**self.PAYLOAD, "arm": "x"}, {**self.PAYLOAD, "board_id": "1"},
+                    {**self.PAYLOAD, "idea": {"title": "no id"}}):
+            with self.assertRaises(ValueError):
+                vet_one(bad, PEER_YAML)
+
+    def test_provider_failure_is_an_aborted_run_not_a_crash(self):
+        def boom(*a, **k):
+            raise LLMError("MISTRAL_API_KEY not set")
+        with mock.patch("cogito.peer.call_llm", side_effect=boom):
+            run = vet_one(dict(self.PAYLOAD), PEER_YAML)["runs"][0]
+        self.assertEqual(run["status"], "aborted")
+        self.assertIn("MISTRAL_API_KEY", run["error"])
+
+    def test_cli_stdout_is_json_only(self):
+        import subprocess
+        env = {"PATH": "/usr/bin:/bin"}   # no API keys: the run aborts, but cleanly
+        proc = subprocess.run([sys.executable, "-m", "cogito.ideagen_bridge", "vet-one", "--stdin"],
+                              input=json.dumps(self.PAYLOAD), capture_output=True, text=True,
+                              cwd=ROOT, env=env, timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(proc.stdout)["runs"][0]["status"], "aborted")
+        bad = subprocess.run([sys.executable, "-m", "cogito.ideagen_bridge", "vet-one", "--stdin"],
+                             input="not json", capture_output=True, text=True, cwd=ROOT, env=env, timeout=60)
+        self.assertEqual(bad.returncode, 1)
+        self.assertEqual(bad.stdout, "")
 
 
 if __name__ == "__main__":
